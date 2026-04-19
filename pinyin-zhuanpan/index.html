@@ -94,8 +94,11 @@
 
     .main-layout .section-spin {
       flex: 0 0 auto;
-      width: min(300px, 100%);
+      /* 容纳：左右内边距 + wheel-wrap 内边距 + 转盘外框，避免顶破绿卡片 */
+      width: min(292px, calc(100% - 1rem));
       max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: clip;
     }
 
     .section-spin {
@@ -103,11 +106,12 @@
       max-width: 720px;
       text-align: center;
       background: linear-gradient(180deg, #fff 0%, #fafef9 100%);
-      padding: 1.15rem 1rem 1.4rem;
+      padding: 1rem 0.6rem 1.25rem;
       border-radius: 20px;
       box-shadow:
         0 8px 32px rgba(45, 138, 110, 0.14),
         0 0 0 2px rgba(45, 138, 110, 0.22);
+      box-sizing: border-box;
     }
 
     .section-spin > .spin-title {
@@ -128,11 +132,34 @@
 
     .section-spin .wheel-wrap {
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.45rem 0.35rem 0.65rem;
+      box-sizing: border-box;
     }
 
     .section-spin .wheel-box {
-      width: min(260px, 82vw);
-      height: min(260px, 82vw);
+      width: 100%;
+      max-width: min(234px, calc(100% - 0.25rem));
+      aspect-ratio: 1;
+      height: auto;
+      margin-left: auto;
+      margin-right: auto;
+      padding-top: 6px;
+      box-sizing: border-box;
+    }
+
+    .section-spin .wheel {
+      border-width: 4px;
+    }
+
+    .section-spin .wheel-box::before {
+      top: 0;
+      border-left-width: 10px;
+      border-right-width: 10px;
+      border-top-width: 15px;
     }
 
     .wheels {
@@ -278,6 +305,89 @@
       transform: none;
     }
 
+    .voice-panel {
+      margin-top: 1rem;
+      padding: 0.85rem 0.65rem 1rem;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 14px;
+      border: 1px solid #c5e3d4;
+      max-width: 100%;
+    }
+
+    .voice-title {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .demo-hint {
+      margin: 0 0 0.55rem;
+      font-size: 0.75rem;
+      color: #666;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .expected-syllable {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #555;
+      text-align: center;
+      word-break: break-all;
+    }
+
+    .correct-read:empty {
+      display: none;
+    }
+
+    .correct-read-sub:empty {
+      display: none;
+    }
+
+    .correct-read {
+      margin: 0 0 0.5rem;
+      padding: 0.55rem 0.5rem;
+      font-size: clamp(1.35rem, 5vw, 1.85rem);
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+      letter-spacing: 0.06em;
+      background: #f0faf4;
+      border-radius: 12px;
+      border: 2px solid #9bcbb8;
+      line-height: 1.35;
+      word-break: break-all;
+    }
+
+    .correct-read-sub {
+      margin: 0 0 0.55rem;
+      font-size: 0.72rem;
+      color: #777;
+      text-align: center;
+    }
+
+    .rj-examples {
+      margin-top: 0.65rem;
+      padding-top: 0.55rem;
+      border-top: 1px dashed #b8d9c8;
+      font-size: 0.72rem;
+      color: #555;
+      line-height: 1.5;
+      max-height: 7.5rem;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .rj-examples strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #2d7a4e;
+    }
+
     .hint {
       margin-top: 1rem;
       font-size: 0.8rem;
@@ -414,8 +524,9 @@
       }
 
       .section-spin .wheel-box {
-        width: min(300px, 88vw);
-        height: min(300px, 88vw);
+        max-width: min(268px, calc(100vw - 2.75rem));
+        aspect-ratio: 1;
+        height: auto;
       }
 
       .result-pair { font-size: 2.35rem; }
@@ -464,6 +575,15 @@
 
       <div class="btn-row">
         <button type="button" class="btn-spin" id="btnSpin">转一次</button>
+      </div>
+
+      <div class="voice-panel" aria-labelledby="voiceTitle">
+        <h3 class="voice-title" id="voiceTitle">拼音示范</h3>
+        <p class="demo-hint">以下为<strong>书写形式</strong>的拼读示范；声调以教材与教师示范为准。</p>
+        <p class="expected-syllable" id="expectedSyllable">请先点「转一次」</p>
+        <p class="correct-read" id="correctRead" aria-live="polite"></p>
+        <p class="correct-read-sub" id="correctReadSub"></p>
+        <div class="rj-examples" id="rjExamples"></div>
       </div>
     </div>
 
@@ -622,6 +742,64 @@
       var outSheng = document.getElementById("outSheng");
       var outYun = document.getElementById("outYun");
       var btnSpin = document.getElementById("btnSpin");
+      var expectedSyllableEl = document.getElementById("expectedSyllable");
+      var correctReadEl = document.getElementById("correctRead");
+      var correctReadSubEl = document.getElementById("correctReadSub");
+
+      /** 当前转盘选中的声母、韵母（用于拼读与示范） */
+      var currentSheng = "";
+      var currentYun = "";
+
+      /**
+       * 拼成音节字符串（与课堂书写一致的主要规则；个别音节以教材为准）
+       */
+      function combinePinyin(s, y) {
+        if (!s || !y) return "";
+        var jqx = s === "j" || s === "q" || s === "x";
+        var yy = y;
+        if (jqx) yy = yy.replace(/ü/g, "u");
+        if (s === "y") {
+          if (y === "u" || y === "ü") return "yu";
+          if (y === "e") return "ye";
+          if (y === "üe") return "yue";
+          if (y === "üan") return "yuan";
+          if (y === "ün") return "yun";
+          if (y === "in") return "yin";
+          if (y === "ing") return "ying";
+          if (y === "i") return "yi";
+          if (y[0] === "i") return "y" + y.slice(1);
+        }
+        if (s === "w") {
+          if (y === "u") return "wu";
+          if (y[0] === "u") return "w" + y.slice(1);
+        }
+        return s + yy;
+      }
+
+      function updateExpectedDisplay() {
+        if (!currentSheng || !currentYun || currentSheng === "—") {
+          expectedSyllableEl.textContent = "请先点「转一次」";
+          if (correctReadEl) correctReadEl.textContent = "";
+          if (correctReadSubEl) correctReadSubEl.textContent = "";
+          return;
+        }
+        var syll = combinePinyin(currentSheng, currentYun);
+        expectedSyllableEl.textContent =
+          "转盘：" + currentSheng + " + " + currentYun;
+        if (correctReadEl) {
+          correctReadEl.textContent = currentSheng + " + " + currentYun + " → " + syll;
+        }
+        if (correctReadSubEl) {
+          correctReadSubEl.textContent = "以上为音节书写形式；声调听教材或教师示范。";
+        }
+      }
+
+      var rjBox = document.getElementById("rjExamples");
+      if (rjBox) {
+        rjBox.innerHTML =
+          "<strong>人教版一年级上·常见音节示例（节选，供对照）</strong>" +
+          "bā八、mǎ马、dà大、dì地、nǚ女、lù路、gē哥、kè课、hé和、jī鸡、qǐ起、xǐ洗、zhū猪、chī吃、shī师、rì日、zì字、cí词、sī思、yī一、wǔ五、yǔ雨、yè叶、yuè月、yuán元、yīn音、yún云、yīng英等。正式读音以教材配套资源为准。";
+      }
 
       var rotSheng = 0;
       var rotYun = 0;
@@ -681,6 +859,9 @@
           if (done === 2) {
             outSheng.textContent = SHENGMU[idxS];
             outYun.textContent = YUNMU[idxY];
+            currentSheng = SHENGMU[idxS];
+            currentYun = YUNMU[idxY];
+            updateExpectedDisplay();
             spinning = false;
             btnSpin.disabled = false;
           }
@@ -691,6 +872,7 @@
       }
 
       btnSpin.addEventListener("click", spin);
+      updateExpectedDisplay();
     })();
   </script>
 </body>
