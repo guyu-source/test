@@ -1,5 +1,5 @@
-# 推送后把 pinyin-zhuanpan 发布为 GitHub Pages
-# 仓库 Settings → Pages → Source 选「GitHub Actions」
+# 推送后把 pinyin-zhuanpan 发布到 GitHub Pages
+# 仓库 Settings → Pages → Build and deployment → Source 选「GitHub Actions」
 
 name: Deploy to GitHub Pages
 
@@ -13,9 +13,10 @@ permissions:
   pages: write
   id-token: write
 
+# 官方建议：不要取消进行中的 Pages 部署，否则容易失败
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -24,10 +25,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static files
+        uses: actions/upload-pages-artifact@v3
         with:
           path: pinyin-zhuanpan
-      - id: deployment
-        uses: actions/deploy-pages@v4
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
