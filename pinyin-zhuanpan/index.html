@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>声韵母转盘练习</title>
+  <style>
+    :root {
+      --bg: #f5f0e6;
+      --card: #fffdf8;
+      --accent: #2d8a6e;
+      --accent-light: #e8f5f0;
+      --text: #2c2c2c;
+      --pointer: #c94c4c;
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem 1rem 2rem;
+    }
+
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: clamp(1.35rem, 4.5vw, 1.65rem);
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 0 0 1rem;
+      font-size: 0.88rem;
+      color: #555;
+      max-width: 1120px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* DOM：先转盘后挂图 → 手机首屏即练习；宽屏 row-reverse → 左挂图右转盘 */
+    .main-layout {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1.25rem 1.75rem;
+      width: 100%;
+      max-width: 1120px;
+    }
+
+    .main-layout .chart-sheet {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .main-layout .section-spin {
+      flex: 0 0 auto;
+      width: min(300px, 100%);
+      max-width: 100%;
+    }
+
+    .section-spin {
+      width: 100%;
+      max-width: 720px;
+      text-align: center;
+      background: linear-gradient(180deg, #fff 0%, #fafef9 100%);
+      padding: 1.15rem 1rem 1.4rem;
+      border-radius: 20px;
+      box-shadow:
+        0 8px 32px rgba(45, 138, 110, 0.14),
+        0 0 0 2px rgba(45, 138, 110, 0.22);
+    }
+
+    .section-spin > .spin-title {
+      margin: 0 0 0.85rem;
+      font-size: 1.28rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+
+    .section-spin .wheels {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      max-width: 100%;
+    }
+
+    .section-spin .wheel-wrap {
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-spin .wheel-box {
+      width: min(260px, 82vw);
+      height: min(260px, 82vw);
+    }
+
+    .wheels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 720px;
+    }
+
+    .wheel-wrap {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1rem 1.25rem 1.25rem;
+      box-shadow: 0 4px 20px var(--shadow);
+      text-align: center;
+    }
+
+    .wheel-wrap h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .wheel-meta {
+      margin: 0.35rem 0 0;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #777;
+    }
+
+    .wheel-box {
+      position: relative;
+      width: min(280px, 85vw);
+      height: min(280px, 85vw);
+      margin: 0 auto;
+    }
+
+    .wheel-box::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 18px solid var(--pointer);
+      z-index: 2;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
+    }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 6px solid #fff;
+      box-shadow: inset 0 0 0 2px #e0ddd4, 0 6px 24px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wheel svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .center-cap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 22%;
+      height: 22%;
+      margin: -11% 0 0 -11%;
+      background: var(--card);
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      box-shadow: 0 2px 8px var(--shadow);
+      z-index: 1;
+    }
+
+    .result {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--accent-light);
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+
+    .result-label {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 0.35rem;
+    }
+
+    .result-pair {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+    }
+
+    .result-pair span {
+      display: inline-block;
+      min-width: 2.2em;
+    }
+
+    .btn-row {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .btn-spin {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(45, 138, 110, 0.35);
+    }
+
+    .btn-spin:hover { filter: brightness(1.05); }
+    .btn-spin:active { transform: scale(0.98); }
+    .btn-spin:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .hint {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #888;
+      text-align: center;
+      max-width: 1120px;
+      line-height: 1.5;
+      padding: 0 0.5rem;
+    }
+
+    /* 挂图：绿虚线 + 小绿框 */
+    .chart-eyebrow {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6a8a78;
+      text-align: center;
+    }
+
+    .chart-sheet {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding-top: 0.15rem;
+    }
+
+    .chart-box {
+      width: 100%;
+      padding: 0.65rem 0.75rem 0.8rem;
+      border: 2px dashed rgba(61, 158, 92, 0.65);
+      border-radius: 10px;
+      background: #fafcf9;
+    }
+
+    .chart-box h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #3a6b4d;
+      text-align: center;
+    }
+
+    .chart-box .note {
+      margin: 0 0 0.55rem;
+      font-size: 0.76rem;
+      color: #555;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .chart-cell-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      justify-content: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .chart-cell-row:last-child { margin-bottom: 0; }
+
+    .pinyin-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.1rem;
+      padding: 0.32rem 0.45rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      background: #fff;
+      border: 2px solid #4caf50;
+      border-radius: 4px;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    .yun-row {
+      display: grid;
+      grid-template-columns: 5.2rem 1fr;
+      gap: 0.45rem 0.6rem;
+      align-items: center;
+      margin-bottom: 0.45rem;
+    }
+
+    .yun-row:last-child { margin-bottom: 0; }
+
+    .yun-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #2d7a4e;
+      text-align: right;
+      line-height: 1.35;
+      padding-right: 0.15rem;
+      white-space: pre-line;
+    }
+
+    .zhengtilist {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .zhengtilist .chart-cell-row { margin-bottom: 0; }
+
+    @media (max-width: 880px) {
+      .main-layout {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .main-layout .chart-sheet {
+        max-width: 720px;
+        width: 100%;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #d8e8dc;
+      }
+
+      .main-layout .section-spin {
+        width: 100%;
+        max-width: 720px;
+        padding: 1.25rem 1rem 1.5rem;
+      }
+
+      .section-spin > .spin-title {
+        font-size: 1.45rem;
+        margin-bottom: 1rem;
+      }
+
+      .section-spin .wheels {
+        flex-direction: column;
+        gap: 1.1rem;
+      }
+
+      .section-spin .wheel-box {
+        width: min(300px, 88vw);
+        height: min(300px, 88vw);
+      }
+
+      .result-pair { font-size: 2.35rem; }
+
+      .btn-spin {
+        width: 100%;
+        max-width: 340px;
+        min-height: 48px;
+        padding: 0.9rem 1.5rem;
+        font-size: 1.08rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>声韵母转盘练习</h1>
+  <p class="subtitle">手机打开即可先练习；向下滑为课本《汉语拼音字母表》对照。电脑宽屏为左挂图、右转盘。</p>
+
+  <div class="main-layout">
+    <div class="section-spin">
+      <p class="spin-title">转盘练习</p>
+      <div class="wheels">
+        <div class="wheel-wrap">
+          <h2>声母表 <span class="wheel-meta">（23 个）</span></h2>
+          <div class="wheel-box">
+            <div class="wheel" id="wheelSheng" aria-hidden="true"></div>
+            <div class="center-cap" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="wheel-wrap">
+          <h2>韵母表 <span class="wheel-meta">（24 个）</span></h2>
+          <div class="wheel-box">
+            <div class="wheel" id="wheelYun" aria-hidden="true"></div>
+            <div class="center-cap" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="result-label">本次结果</div>
+        <div class="result-pair" id="resultText">
+          <span id="outSheng">—</span>
+          <span id="outYun">—</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-spin" id="btnSpin">转一次</button>
+      </div>
+    </div>
+
+    <div class="chart-sheet" aria-label="汉语拼音字母表挂图">
+      <p class="chart-eyebrow">课本字母表 · 对照用（家长可下滑查看）</p>
+      <div class="chart-box">
+        <h3>声母表（23个）</h3>
+        <div id="wallSheng"></div>
+      </div>
+      <div class="chart-box">
+        <h3>韵母表（24个）</h3>
+        <div id="wallYun"></div>
+      </div>
+      <div class="chart-box" aria-labelledby="ztitle">
+        <h3 id="ztitle">整体认读音节（16个）</h3>
+        <p class="note">整读不学拼，与「声母 + 韵母」拼读分开掌握。</p>
+        <div class="zhengtilist" id="zhengtilist"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">指针在转盘正上方。韵母转盘顺序与下方挂图一致：单韵母 → 复韵母 → 前鼻韵母 → 后鼻韵母。</p>
+
+  <script>
+    (function () {
+      var SHENGMU = [
+        "b", "p", "m", "f", "d", "t", "n", "l", "g", "k",
+        "h", "j", "q", "x", "zh", "ch", "sh", "r", "z", "c",
+        "s", "y", "w"
+      ];
+
+      var YUNMU = [
+        "a", "o", "e", "i", "u", "ü",
+        "ai", "ei", "ui", "ao", "ou", "iu", "ie", "üe", "er",
+        "an", "en", "in", "un", "ün",
+        "ang", "eng", "ing", "ong"
+      ];
+
+      var ZHENGTI = [
+        "zhi", "chi", "shi", "ri", "zi", "ci", "si",
+        "yi", "wu", "yu", "ye", "yue", "yuan",
+        "yin", "yun", "ying"
+      ];
+
+      var colorsSheng = [
+        "#7eb8da", "#a8d4e6", "#c5e8f0", "#9fd4c1", "#b8e0c8",
+        "#d4e8b8", "#e8e2a8", "#f0d4a0", "#e8c4a0", "#dcb8a8",
+        "#c8b8d8", "#b8a8d8", "#a898d0", "#98a8c8", "#8898c0",
+        "#a0b8d0", "#b0c8d8", "#c0d8e0", "#d0e8e8", "#a8d0c8",
+        "#90c8b8", "#88c0b0", "#80b8a8"
+      ];
+
+      var colorsYun = [].concat(
+        ["#c8e6c9", "#aed581", "#9ccc65", "#8bc34a", "#7cb342", "#689f38"],
+        ["#ffe0b2", "#ffcc80", "#ffb74d", "#ffa726", "#ff9800", "#fb8c00", "#f57c00", "#ef6c00", "#fff3e0"],
+        ["#b3e5fc", "#81d4fa", "#4fc3f7", "#29b6f6", "#039be5"],
+        ["#e1bee7", "#ce93d8", "#ba68c8", "#ab47bc"]
+      );
+
+      function appendCellsRow(container, slice) {
+        var row = document.createElement("div");
+        row.className = "chart-cell-row";
+        for (var i = 0; i < slice.length; i++) {
+          var cell = document.createElement("span");
+          cell.className = "pinyin-cell";
+          cell.textContent = slice[i];
+          row.appendChild(cell);
+        }
+        container.appendChild(row);
+      }
+
+      var wallSheng = document.getElementById("wallSheng");
+      if (wallSheng) {
+        appendCellsRow(wallSheng, SHENGMU.slice(0, 10));
+        appendCellsRow(wallSheng, SHENGMU.slice(10, 20));
+        appendCellsRow(wallSheng, SHENGMU.slice(20, 23));
+      }
+
+      var wallYun = document.getElementById("wallYun");
+      if (wallYun) {
+        var yunGroups = [
+          { label: "单韵母\n（6个）", slice: YUNMU.slice(0, 6) },
+          { label: "复韵母\n（9个）", slice: YUNMU.slice(6, 15) },
+          { label: "前鼻韵母\n（5个）", slice: YUNMU.slice(15, 20) },
+          { label: "后鼻韵母\n（4个）", slice: YUNMU.slice(20, 24) }
+        ];
+        for (var g = 0; g < yunGroups.length; g++) {
+          var wrap = document.createElement("div");
+          wrap.className = "yun-row";
+          var lab = document.createElement("div");
+          lab.className = "yun-label";
+          lab.textContent = yunGroups[g].label;
+          var cells = document.createElement("div");
+          appendCellsRow(cells, yunGroups[g].slice);
+          wrap.appendChild(lab);
+          wrap.appendChild(cells);
+          wallYun.appendChild(wrap);
+        }
+      }
+
+      var zl = document.getElementById("zhengtilist");
+      if (zl) {
+        appendCellsRow(zl, ZHENGTI.slice(0, 7));
+        appendCellsRow(zl, ZHENGTI.slice(7, 13));
+        appendCellsRow(zl, ZHENGTI.slice(13, 16));
+      }
+
+      function buildWheel(el, items, colors) {
+        var n = items.length;
+        var slice = 360 / n;
+        var svgNS = "http://www.w3.org/2000/svg";
+        var svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "-1 -1 2 2");
+        for (var i = 0; i < n; i++) {
+          var start = (i * slice - 90) * (Math.PI / 180);
+          var end = ((i + 1) * slice - 90) * (Math.PI / 180);
+          var x1 = Math.cos(start);
+          var y1 = Math.sin(start);
+          var x2 = Math.cos(end);
+          var y2 = Math.sin(end);
+          var large = slice > 180 ? 1 : 0;
+          var d =
+            "M 0 0 L " + x1 + " " + y1 + " A 1 1 0 " + large + " 1 " + x2 + " " + y2 + " Z";
+          var path = document.createElementNS(svgNS, "path");
+          path.setAttribute("d", d);
+          path.setAttribute("fill", colors[i % colors.length]);
+          path.setAttribute("stroke", "#fff");
+          path.setAttribute("stroke-width", "0.02");
+          svg.appendChild(path);
+        }
+        for (var j = 0; j < n; j++) {
+          var mid = ((j + 0.5) * slice - 90) * (Math.PI / 180);
+          var tx = Math.cos(mid) * 0.62;
+          var ty = Math.sin(mid) * 0.62;
+          var text = document.createElementNS(svgNS, "text");
+          text.setAttribute("x", String(tx));
+          text.setAttribute("y", String(ty));
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("dominant-baseline", "middle");
+          text.setAttribute("fill", "#333");
+          text.setAttribute("font-size", n > 20 ? "0.11" : "0.13");
+          text.setAttribute("font-weight", "700");
+          text.setAttribute("transform", "rotate(" + (j * slice + slice / 2) + " " + tx + " " + ty + ")");
+          text.textContent = items[j];
+          svg.appendChild(text);
+        }
+        el.appendChild(svg);
+        return { n: n, slice: slice };
+      }
+
+      var metaSheng = buildWheel(document.getElementById("wheelSheng"), SHENGMU, colorsSheng);
+      var metaYun = buildWheel(document.getElementById("wheelYun"), YUNMU, colorsYun);
+
+      var wheelSheng = document.getElementById("wheelSheng");
+      var wheelYun = document.getElementById("wheelYun");
+      var outSheng = document.getElementById("outSheng");
+      var outYun = document.getElementById("outYun");
+      var btnSpin = document.getElementById("btnSpin");
+
+      var rotSheng = 0;
+      var rotYun = 0;
+      var spinning = false;
+
+      function mod360(x) {
+        return ((x % 360) + 360) % 360;
+      }
+
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function animateWheel(el, from, to, durationMs, onDone) {
+        var start = performance.now();
+        function frame(now) {
+          var t = Math.min(1, (now - start) / durationMs);
+          var e = easeOutCubic(t);
+          var current = from + (to - from) * e;
+          el.style.transform = "rotate(" + current + "deg)";
+          if (t < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            el.style.transform = "rotate(" + to + "deg)";
+            if (onDone) onDone();
+          }
+        }
+        requestAnimationFrame(frame);
+      }
+
+      function nextRotation(current, idx, n, slice, fullSpins) {
+        var endMod = mod360(360 - idx * slice - slice / 2);
+        var fromMod = mod360(current);
+        var deltaMod = mod360(endMod - fromMod);
+        return current + fullSpins * 360 + deltaMod;
+      }
+
+      function spin() {
+        if (spinning) return;
+        spinning = true;
+        btnSpin.disabled = true;
+
+        var idxS = Math.floor(Math.random() * metaSheng.n);
+        var idxY = Math.floor(Math.random() * metaYun.n);
+        var spinsS = 4 + Math.floor(Math.random() * 3);
+        var spinsY = 4 + Math.floor(Math.random() * 3);
+
+        var fromS = rotSheng;
+        var fromY = rotYun;
+        rotSheng = nextRotation(fromS, idxS, metaSheng.n, metaSheng.slice, spinsS);
+        rotYun = nextRotation(fromY, idxY, metaYun.n, metaYun.slice, spinsY);
+
+        var dur = 2800 + Math.random() * 400;
+        var done = 0;
+        function checkDone() {
+          done++;
+          if (done === 2) {
+            outSheng.textContent = SHENGMU[idxS];
+            outYun.textContent = YUNMU[idxY];
+            spinning = false;
+            btnSpin.disabled = false;
+          }
+        }
+
+        animateWheel(wheelSheng, fromS, rotSheng, dur, checkDone);
+        animateWheel(wheelYun, fromY, rotYun, dur + 120, checkDone);
+      }
+
+      btnSpin.addEventListener("click", spin);
+    })();
+  </script>
+</body>
+</html>
