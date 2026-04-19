@@ -122,6 +122,53 @@
       letter-spacing: 0.06em;
     }
 
+    .yun-mode-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.45rem;
+      margin: 0 0 1rem;
+      padding: 0 0.2rem;
+    }
+
+    .yun-mode-btn {
+      padding: 0.48rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      background: #e8f3ec;
+      color: #256b4a;
+      border: 2px solid #9bcbb8;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .yun-mode-btn:hover {
+      filter: brightness(1.04);
+    }
+
+    .yun-mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 3px 12px rgba(45, 138, 110, 0.35);
+    }
+
+    .yun-mode-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .yun-mode-hint {
+      margin: -0.35rem 0 0.75rem;
+      font-size: 0.72rem;
+      color: #666;
+      line-height: 1.45;
+      padding: 0 0.35rem;
+    }
+
     .section-spin .wheels {
       display: flex;
       flex-direction: column;
@@ -271,6 +318,24 @@
     .result-pair span {
       display: inline-block;
       min-width: 2.2em;
+    }
+
+    .result-pair .result-plus {
+      min-width: 0;
+      font-size: 0.55em;
+      font-weight: 700;
+      color: #666;
+      letter-spacing: 0.08em;
+      vertical-align: middle;
+      padding: 0 0.15em;
+    }
+
+    .result-syll {
+      margin-top: 0.45rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2e6b3a;
+      letter-spacing: 0.06em;
     }
 
     .btn-row {
@@ -518,6 +583,11 @@
         margin-bottom: 1rem;
       }
 
+      .yun-mode-btn {
+        font-size: 0.82rem;
+        padding: 0.52rem 0.75rem;
+      }
+
       .section-spin .wheels {
         flex-direction: column;
         gap: 1.1rem;
@@ -530,6 +600,8 @@
       }
 
       .result-pair { font-size: 2.35rem; }
+
+      .result-syll { font-size: 1.08rem; }
 
       .btn-spin {
         width: 100%;
@@ -548,6 +620,13 @@
   <div class="main-layout">
     <div class="section-spin">
       <p class="spin-title">转盘练习</p>
+      <p class="yun-mode-hint">韵母分四类转盘（单韵母、前鼻韵母、后鼻韵母、复韵母），先点按钮再转；声母转盘不变，可明显减少不合法组合。</p>
+      <div class="yun-mode-bar" role="tablist" aria-label="韵母转盘类型">
+        <button type="button" class="yun-mode-btn active" data-yun-mode="dan" id="yunBtnDan">声母 + 单韵母</button>
+        <button type="button" class="yun-mode-btn" data-yun-mode="qian" id="yunBtnQian">声母 + 前鼻韵母</button>
+        <button type="button" class="yun-mode-btn" data-yun-mode="hou" id="yunBtnHou">声母 + 后鼻韵母</button>
+        <button type="button" class="yun-mode-btn" data-yun-mode="fu" id="yunBtnFu">声母 + 复韵母</button>
+      </div>
       <div class="wheels">
         <div class="wheel-wrap">
           <h2>声母表 <span class="wheel-meta">（23 个）</span></h2>
@@ -557,7 +636,7 @@
           </div>
         </div>
         <div class="wheel-wrap">
-          <h2>韵母表 <span class="wheel-meta">（24 个）</span></h2>
+          <h2 id="yunWheelHeading">韵母 · 单韵母（6）</h2>
           <div class="wheel-box">
             <div class="wheel" id="wheelYun" aria-hidden="true"></div>
             <div class="center-cap" aria-hidden="true"></div>
@@ -569,8 +648,10 @@
         <div class="result-label">本次结果</div>
         <div class="result-pair" id="resultText">
           <span id="outSheng">—</span>
+          <span class="result-plus" aria-hidden="true"> + </span>
           <span id="outYun">—</span>
         </div>
+        <div class="result-syll" id="outSyllable">音节：—</div>
       </div>
 
       <div class="btn-row">
@@ -605,7 +686,7 @@
     </div>
   </div>
 
-  <p class="hint">指针在转盘正上方。韵母转盘顺序与下方挂图一致：单韵母 → 复韵母 → 前鼻韵母 → 后鼻韵母。</p>
+  <p class="hint">指针在转盘正上方。挂图韵母顺序：单韵母 → 复韵母 → 前鼻韵母 → 后鼻韵母；练习时可用上方按钮切换「声母 + 某一类韵母」转盘。</p>
 
   <script>
     (function () {
@@ -615,12 +696,18 @@
         "s", "y", "w"
       ];
 
-      var YUNMU = [
-        "a", "o", "e", "i", "u", "ü",
-        "ai", "ei", "ui", "ao", "ou", "iu", "ie", "üe", "er",
-        "an", "en", "in", "un", "ün",
-        "ang", "eng", "ing", "ong"
+      var YUNMU_DAN = ["a", "o", "e", "i", "u", "ü"];
+      var YUNMU_FU = [
+        "ai", "ei", "ui", "ao", "ou", "iu", "ie", "üe", "er"
       ];
+      var YUNMU_QIANBI = ["an", "en", "in", "un", "ün"];
+      var YUNMU_HOUBI = ["ang", "eng", "ing", "ong"];
+      var YUNMU = [].concat(
+        YUNMU_DAN,
+        YUNMU_FU,
+        YUNMU_QIANBI,
+        YUNMU_HOUBI
+      );
 
       var ZHENGTI = [
         "zhi", "chi", "shi", "ri", "zi", "ci", "si",
@@ -724,7 +811,10 @@
           text.setAttribute("text-anchor", "middle");
           text.setAttribute("dominant-baseline", "middle");
           text.setAttribute("fill", "#333");
-          text.setAttribute("font-size", n > 20 ? "0.11" : "0.13");
+          text.setAttribute(
+            "font-size",
+            n > 20 ? "0.11" : n <= 5 ? "0.16" : n <= 9 ? "0.14" : "0.13"
+          );
           text.setAttribute("font-weight", "700");
           text.setAttribute("transform", "rotate(" + (j * slice + slice / 2) + " " + tx + " " + ty + ")");
           text.textContent = items[j];
@@ -734,13 +824,59 @@
         return { n: n, slice: slice };
       }
 
-      var metaSheng = buildWheel(document.getElementById("wheelSheng"), SHENGMU, colorsSheng);
-      var metaYun = buildWheel(document.getElementById("wheelYun"), YUNMU, colorsYun);
-
       var wheelSheng = document.getElementById("wheelSheng");
       var wheelYun = document.getElementById("wheelYun");
+      var metaSheng = buildWheel(wheelSheng, SHENGMU, colorsSheng);
+      var metaYun;
+
+      /** 与挂图四段色条一致：单 / 复 / 前鼻 / 后鼻 */
+      var YUN_MODE_LABEL = {
+        dan: "单韵母",
+        fu: "复韵母",
+        qian: "前鼻韵母",
+        hou: "后鼻韵母"
+      };
+      var YUN_MODE_COLOR_RANGE = {
+        dan: [0, 6],
+        fu: [6, 15],
+        qian: [15, 20],
+        hou: [20, 24]
+      };
+
+      var yunMode = "dan";
+
+      function getActiveYunList() {
+        if (yunMode === "fu") return YUNMU_FU;
+        if (yunMode === "qian") return YUNMU_QIANBI;
+        if (yunMode === "hou") return YUNMU_HOUBI;
+        return YUNMU_DAN;
+      }
+
+      function colorsForYunMode(mode) {
+        var r = YUN_MODE_COLOR_RANGE[mode] || YUN_MODE_COLOR_RANGE.dan;
+        return colorsYun.slice(r[0], r[1]);
+      }
+
+      function clearWheelEl(el) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+      }
+
+      var yunWheelHeading = document.getElementById("yunWheelHeading");
+
+      function updateYunWheelHeading() {
+        var list = getActiveYunList();
+        var lab = YUN_MODE_LABEL[yunMode] || "韵母";
+        if (yunWheelHeading) {
+          yunWheelHeading.textContent =
+            "韵母 · " + lab + "（" + list.length + "）";
+        }
+      }
+
       var outSheng = document.getElementById("outSheng");
       var outYun = document.getElementById("outYun");
+      var outSyllableEl = document.getElementById("outSyllable");
       var btnSpin = document.getElementById("btnSpin");
       var expectedSyllableEl = document.getElementById("expectedSyllable");
       var correctReadEl = document.getElementById("correctRead");
@@ -749,6 +885,10 @@
       /** 当前转盘选中的声母、韵母（用于拼读与示范） */
       var currentSheng = "";
       var currentYun = "";
+
+      var rotSheng = 0;
+      var rotYun = 0;
+      var spinning = false;
 
       /**
        * 《汉语拼音方案》中常见音节（无声调），用于校验转盘组合是否合法。
@@ -774,10 +914,21 @@
         "u", "ü", "üe", "ün", "üan", "un"
       ];
 
+      /** y 只与可拼成规范音节的韵母组合（避免 y+ai 等与教材不符） */
+      var Y_ALLOWED_FINALS = [
+        "a", "o", "e", "i", "u", "ü",
+        "ao", "ou", "iu", "ie", "üe",
+        "an", "in", "un", "ün",
+        "ang", "ing", "ong"
+      ];
+
       function isStructuralValid(s, y) {
         if (!s || !y) return false;
         if (s === "j" || s === "q" || s === "x") {
           return JQX_ALLOWED_FINALS.indexOf(y) !== -1;
+        }
+        if (s === "y") {
+          return Y_ALLOWED_FINALS.indexOf(y) !== -1;
         }
         /* f、h 不与 i 起头的韵母相拼（无 fi、hi 等） */
         if ((s === "f" || s === "h") && y.charAt(0) === "i") {
@@ -793,6 +944,7 @@
         if (!s || !y) return "";
         var jqx = s === "j" || s === "q" || s === "x";
         if (s === "y") {
+          if (y === "iu") return "yu";
           if (y === "u" || y === "ü") return "yu";
           if (y === "e") return "ye";
           if (y === "üe") return "yue";
@@ -824,38 +976,144 @@
         return s + body;
       }
 
-      /** 仅转盘：从「声母×韵母」中筛出音节表认可的组合 */
+      function isYPlusIu(s, y) {
+        return String(s || "").trim() === "y" && String(y || "").trim() === "iu";
+      }
+
+      /**
+       * y+iu 音节写作 yu；盘上格为「iu」，展示为 y + u，避免读成「yiu」。
+       */
+      function displayShengYun(s, y) {
+        if (isYPlusIu(s, y)) return { sheng: "y", yun: "u" };
+        return { sheng: s, yun: y };
+      }
+
+      /** 拼音示范公式行：y+iu 固定为「y + u = yu」，其余为「声 + 韵 → 音节」 */
+      function formatFormulaLine(s, y, syll) {
+        if (isYPlusIu(s, y)) return "y + u = " + syll;
+        var d = displayShengYun(s, y);
+        return d.sheng + " + " + d.yun + " → " + syll;
+      }
+
+      /** 转盘说明行 */
+      function formatZhuanpanLine(s, y) {
+        if (isYPlusIu(s, y)) return "转盘：y + u";
+        var d = displayShengYun(s, y);
+        return "转盘：" + d.sheng + " + " + d.yun;
+      }
+
       var VALID_INDEX_PAIRS = [];
-      for (var si = 0; si < SHENGMU.length; si++) {
-        for (var yi = 0; yi < YUNMU.length; yi++) {
-          var s0 = SHENGMU[si];
-          var y0 = YUNMU[yi];
-          if (!isStructuralValid(s0, y0)) continue;
-          var c = combinePinyin(s0, y0);
-          if (isLegalSyllable(c)) {
-            VALID_INDEX_PAIRS.push([si, yi]);
+
+      function rebuildValidPairs() {
+        var list = getActiveYunList();
+        var pairs = [];
+        for (var si = 0; si < SHENGMU.length; si++) {
+          for (var yi = 0; yi < list.length; yi++) {
+            var s0 = SHENGMU[si];
+            var y0 = list[yi];
+            if (!isStructuralValid(s0, y0)) continue;
+            var c = combinePinyin(s0, y0);
+            if (isLegalSyllable(c)) {
+              pairs.push([si, yi]);
+            }
+          }
+        }
+        VALID_INDEX_PAIRS = pairs;
+        if (VALID_INDEX_PAIRS.length === 0) {
+          VALID_INDEX_PAIRS.push([0, 0]);
+        }
+      }
+
+      function rebuildYunWheelAndPairs() {
+        clearWheelEl(wheelYun);
+        metaYun = buildWheel(
+          wheelYun,
+          getActiveYunList(),
+          colorsForYunMode(yunMode)
+        );
+        rotYun = 0;
+        wheelYun.style.transform = "rotate(0deg)";
+        updateYunWheelHeading();
+        rebuildValidPairs();
+      }
+
+      var yunModeButtons = document.querySelectorAll(".yun-mode-btn");
+
+      function setYunModeButtonsDisabled(disabled) {
+        for (var b = 0; b < yunModeButtons.length; b++) {
+          yunModeButtons[b].disabled = disabled;
+        }
+      }
+
+      function syncYunModeButtonsActive() {
+        for (var b = 0; b < yunModeButtons.length; b++) {
+          var btn = yunModeButtons[b];
+          if (btn.getAttribute("data-yun-mode") === yunMode) {
+            btn.classList.add("active");
+            btn.setAttribute("aria-selected", "true");
+          } else {
+            btn.classList.remove("active");
+            btn.setAttribute("aria-selected", "false");
           }
         }
       }
-      if (VALID_INDEX_PAIRS.length === 0) {
-        VALID_INDEX_PAIRS.push([0, 0]);
+
+      function applyYunMode(nextMode) {
+        if (nextMode === yunMode) return;
+        yunMode = nextMode;
+        syncYunModeButtonsActive();
+        currentSheng = "";
+        currentYun = "";
+        if (outSheng) outSheng.textContent = "—";
+        if (outYun) outYun.textContent = "—";
+        rebuildYunWheelAndPairs();
+        updateExpectedDisplay();
       }
+
+      for (var bi = 0; bi < yunModeButtons.length; bi++) {
+        yunModeButtons[bi].addEventListener("click", function () {
+          var m = this.getAttribute("data-yun-mode");
+          if (m) applyYunMode(m);
+        });
+      }
+      syncYunModeButtonsActive();
+      rebuildYunWheelAndPairs();
 
       function updateExpectedDisplay() {
         if (!currentSheng || !currentYun || currentSheng === "—") {
           expectedSyllableEl.textContent = "请先点「转一次」";
           if (correctReadEl) correctReadEl.textContent = "";
           if (correctReadSubEl) correctReadSubEl.textContent = "";
+          if (outSyllableEl) outSyllableEl.textContent = "音节：—";
           return;
         }
         var syll = combinePinyin(currentSheng, currentYun);
-        expectedSyllableEl.textContent =
-          "转盘：" + currentSheng + " + " + currentYun;
+        expectedSyllableEl.textContent = formatZhuanpanLine(
+          currentSheng,
+          currentYun
+        );
         if (correctReadEl) {
-          correctReadEl.textContent = currentSheng + " + " + currentYun + " → " + syll;
+          correctReadEl.textContent = formatFormulaLine(
+            currentSheng,
+            currentYun,
+            syll
+          );
         }
         if (correctReadSubEl) {
-          correctReadSubEl.textContent = "以上为音节书写形式；声调听教材或教师示范。";
+          if (isYPlusIu(currentSheng, currentYun)) {
+            correctReadSubEl.textContent =
+              "盘上韵母格为 iu；拼读按 y + u = yu 书写。声调听教材或教师示范。";
+          } else {
+            correctReadSubEl.textContent =
+              "以上为音节书写形式；声调听教材或教师示范。";
+          }
+        }
+        if (outSyllableEl) {
+          if (isYPlusIu(currentSheng, currentYun)) {
+            outSyllableEl.textContent = "y + u = " + syll;
+          } else {
+            outSyllableEl.textContent = "音节：" + syll;
+          }
         }
       }
 
@@ -865,10 +1123,6 @@
           "<strong>人教版一年级上·常见音节示例（节选，供对照）</strong>" +
           "bā八、mǎ马、dà大、dì地、nǚ女、lù路、gē哥、kè课、hé和、jī鸡、qǐ起、xǐ洗、zhū猪、chī吃、shī师、rì日、zì字、cí词、sī思、yī一、wǔ五、yǔ雨、yè叶、yuè月、yuán元、yīn音、yún云、yīng英等。正式读音以教材配套资源为准。";
       }
-
-      var rotSheng = 0;
-      var rotYun = 0;
-      var spinning = false;
 
       function mod360(x) {
         return ((x % 360) + 360) % 360;
@@ -906,6 +1160,7 @@
         if (spinning) return;
         spinning = true;
         btnSpin.disabled = true;
+        setYunModeButtonsDisabled(true);
 
         var pick = VALID_INDEX_PAIRS[
           Math.floor(Math.random() * VALID_INDEX_PAIRS.length)
@@ -925,13 +1180,17 @@
         function checkDone() {
           done++;
           if (done === 2) {
-            outSheng.textContent = SHENGMU[idxS];
-            outYun.textContent = YUNMU[idxY];
-            currentSheng = SHENGMU[idxS];
-            currentYun = YUNMU[idxY];
+            var rawS = SHENGMU[idxS];
+            var rawY = getActiveYunList()[idxY];
+            var show = displayShengYun(rawS, rawY);
+            outSheng.textContent = show.sheng;
+            outYun.textContent = show.yun;
+            currentSheng = rawS;
+            currentYun = rawY;
             updateExpectedDisplay();
             spinning = false;
             btnSpin.disabled = false;
+            setYunModeButtonsDisabled(false);
           }
         }
 
