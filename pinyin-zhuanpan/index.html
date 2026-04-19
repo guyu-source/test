@@ -751,13 +751,47 @@
       var currentYun = "";
 
       /**
-       * 拼成音节字符串（与课堂书写一致的主要规则；个别音节以教材为准）
+       * 《汉语拼音方案》中常见音节（无声调），用于校验转盘组合是否合法。
+       * 含 ü 的音节用 v 存储，与 canonSyll 一致。
+       */
+      var LEGAL_SYLLABLES = new Set(
+        "a,ai,an,ang,ao,ba,bai,ban,bang,bao,bei,ben,beng,bi,bian,biao,bie,bin,bing,bo,bu,ca,cai,can,cang,cao,ce,cen,ceng,cha,chai,chan,chang,chao,che,chen,cheng,chi,chong,chou,chu,chua,chuai,chuan,chuang,chui,chun,chuo,ci,cong,cou,cu,cuan,cui,cun,cuo,da,dai,dan,dang,dao,de,dei,den,deng,di,dia,dian,diao,die,ding,diu,dong,dou,du,duan,dui,dun,duo,e,en,er,fa,fan,fang,fei,fen,feng,fo,fou,fu,ga,gai,gan,gang,gao,ge,gei,gen,geng,gong,gou,gu,gua,guai,guan,guang,gui,gun,guo,ha,hai,han,hang,hao,he,hei,hen,heng,hong,hou,hu,hua,huai,huan,huang,hui,hun,huo,ji,jia,jian,jiang,jiao,jie,jin,jing,jiong,jiu,ju,juan,jue,jun,ka,kai,kan,kang,kao,ke,ken,keng,kong,kou,ku,kua,kuai,kuan,kuang,kui,kun,kuo,la,lai,lan,lang,lao,le,lei,leng,li,lia,lian,liang,liao,lie,lin,ling,liu,lo,long,lou,lu,luan,lun,luo,lv,lve,me,mai,man,mang,mao,mei,men,meng,mi,mian,miao,mie,min,ming,miu,mo,mou,mu,na,nai,nan,nang,nao,ne,nei,nen,neng,ni,nia,nian,niang,niao,nie,nin,ning,niu,nong,nou,nu,nuan,nun,nuo,nv,nve,ou,pa,pai,pan,pang,pao,pei,pen,peng,pi,pian,piao,pie,pin,ping,po,pou,pu,qi,qia,qian,qiang,qiao,qie,qin,qing,qiong,qiu,qu,quan,que,qun,ran,rang,rao,re,ren,reng,ri,rong,rou,ru,ruan,rui,run,ruo,sa,sai,san,sang,sao,se,sen,seng,sha,shai,shan,shang,shao,she,shei,shen,sheng,shi,shou,shu,shua,shuai,shuan,shuang,shui,shun,shuo,si,song,sou,su,suan,sui,sun,suo,ta,tai,tan,tang,tao,te,teng,ti,tian,tiao,tie,ting,tong,tou,tu,tuan,tui,tun,tuo,wa,wai,wan,wang,wei,wen,weng,wo,wu,xi,xia,xian,xiang,xiao,xie,xin,xing,xiong,xiu,xu,xuan,xue,xun,ya,yan,yang,yao,ye,yi,yin,ying,yo,yong,you,yu,yuan,yue,yun,za,zai,zan,zang,zao,ze,zen,zeng,zha,zhai,zhan,zhang,zhao,zhe,zhen,zheng,zhi,zhong,zhou,zhu,zhua,zhuai,zhuan,zhuang,zhui,zhun,zhuo,zi,zong,zou,zu,zuan,zui,zun,zuo".split(",")
+      );
+
+      function canonSyll(str) {
+        return String(str || "")
+          .toLowerCase()
+          .replace(/ü/g, "v");
+      }
+
+      function isLegalSyllable(syll) {
+        return syll && LEGAL_SYLLABLES.has(canonSyll(syll));
+      }
+
+      /** j/q/x 只能与齐齿呼、撮口呼（含 ü 写成 u）相拼，禁止出现 xan、jan 等 */
+      var JQX_ALLOWED_FINALS = [
+        "i", "ia", "ie", "iao", "ian", "iang", "iong", "iu", "in", "ing",
+        "u", "ü", "üe", "ün", "üan", "un"
+      ];
+
+      function isStructuralValid(s, y) {
+        if (!s || !y) return false;
+        if (s === "j" || s === "q" || s === "x") {
+          return JQX_ALLOWED_FINALS.indexOf(y) !== -1;
+        }
+        /* f、h 不与 i 起头的韵母相拼（无 fi、hi 等） */
+        if ((s === "f" || s === "h") && y.charAt(0) === "i") {
+          return false;
+        }
+        return true;
+      }
+
+      /**
+       * 拼成《汉语拼音方案》书写形式（与音节表对照；ü 在 n/l 后保留 ü，表中用 v 校验）
        */
       function combinePinyin(s, y) {
         if (!s || !y) return "";
         var jqx = s === "j" || s === "q" || s === "x";
-        var yy = y;
-        if (jqx) yy = yy.replace(/ü/g, "u");
         if (s === "y") {
           if (y === "u" || y === "ü") return "yu";
           if (y === "e") return "ye";
@@ -767,13 +801,44 @@
           if (y === "in") return "yin";
           if (y === "ing") return "ying";
           if (y === "i") return "yi";
+          if (y === "a") return "ya";
+          if (y === "ao") return "yao";
+          if (y === "an") return "yan";
+          if (y === "ang") return "yang";
+          if (y === "ong") return "yong";
+          if (y === "ou") return "you";
           if (y[0] === "i") return "y" + y.slice(1);
         }
         if (s === "w") {
           if (y === "u") return "wu";
           if (y[0] === "u") return "w" + y.slice(1);
         }
-        return s + yy;
+        var yy = y;
+        if (jqx) yy = yy.replace(/ü/g, "u");
+        var body = yy;
+        if (s !== "y" && s !== "w") {
+          if (body === "iou") body = "iu";
+          if (body === "uei") body = "ui";
+          if (body === "uen") body = "un";
+        }
+        return s + body;
+      }
+
+      /** 仅转盘：从「声母×韵母」中筛出音节表认可的组合 */
+      var VALID_INDEX_PAIRS = [];
+      for (var si = 0; si < SHENGMU.length; si++) {
+        for (var yi = 0; yi < YUNMU.length; yi++) {
+          var s0 = SHENGMU[si];
+          var y0 = YUNMU[yi];
+          if (!isStructuralValid(s0, y0)) continue;
+          var c = combinePinyin(s0, y0);
+          if (isLegalSyllable(c)) {
+            VALID_INDEX_PAIRS.push([si, yi]);
+          }
+        }
+      }
+      if (VALID_INDEX_PAIRS.length === 0) {
+        VALID_INDEX_PAIRS.push([0, 0]);
       }
 
       function updateExpectedDisplay() {
@@ -842,8 +907,11 @@
         spinning = true;
         btnSpin.disabled = true;
 
-        var idxS = Math.floor(Math.random() * metaSheng.n);
-        var idxY = Math.floor(Math.random() * metaYun.n);
+        var pick = VALID_INDEX_PAIRS[
+          Math.floor(Math.random() * VALID_INDEX_PAIRS.length)
+        ];
+        var idxS = pick[0];
+        var idxY = pick[1];
         var spinsS = 4 + Math.floor(Math.random() * 3);
         var spinsY = 4 + Math.floor(Math.random() * 3);
 
