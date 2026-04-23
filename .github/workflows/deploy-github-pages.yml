@@ -1,4 +1,4 @@
-# 推送后把 pinyin-zhuanpan 发布到 GitHub Pages
+# 推送后把整个仓库的静态页面发布到 GitHub Pages（支持多项目）
 # 仓库 Settings → Pages → Build and deployment → Source 选「GitHub Actions」
 
 name: Deploy to GitHub Pages
@@ -34,7 +34,7 @@ jobs:
       - name: Upload static files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: pinyin-zhuanpan
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment

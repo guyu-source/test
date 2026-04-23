@@ -453,6 +453,16 @@
       color: #2d7a4e;
     }
 
+    .linkage-note {
+      margin-top: 0.55rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #b8d9c8;
+      font-size: 0.74rem;
+      color: #4f6f60;
+      text-align: center;
+      line-height: 1.45;
+    }
+
     .hint {
       margin-top: 1rem;
       font-size: 0.8rem;
@@ -665,6 +675,7 @@
         <p class="correct-read" id="correctRead" aria-live="polite"></p>
         <p class="correct-read-sub" id="correctReadSub"></p>
         <div class="rj-examples" id="rjExamples"></div>
+        <p class="linkage-note" id="linkageNote">课堂联动：累计练习 0 次（每 5 次可在电子宠物领取奖励）</p>
       </div>
     </div>
 
@@ -881,6 +892,39 @@
       var expectedSyllableEl = document.getElementById("expectedSyllable");
       var correctReadEl = document.getElementById("correctRead");
       var correctReadSubEl = document.getElementById("correctReadSub");
+      var linkageNoteEl = document.getElementById("linkageNote");
+
+      var LS_PRACTICE_COUNT_KEY = "classroom_pinyin_practice_count";
+
+      function getPracticeCount() {
+        try {
+          var n = Number(localStorage.getItem(LS_PRACTICE_COUNT_KEY) || 0);
+          return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function setPracticeCount(n) {
+        try {
+          localStorage.setItem(LS_PRACTICE_COUNT_KEY, String(Math.max(0, Math.floor(n))));
+        } catch (e) {
+          /* ignore storage errors */
+        }
+      }
+
+      function refreshLinkageNote() {
+        if (!linkageNoteEl) return;
+        var c = getPracticeCount();
+        linkageNoteEl.textContent =
+          "课堂联动：累计练习 " + c + " 次（每 5 次可在电子宠物领取奖励）";
+      }
+
+      function recordPractice() {
+        var c = getPracticeCount() + 1;
+        setPracticeCount(c);
+        refreshLinkageNote();
+      }
 
       /** 当前转盘选中的声母、韵母（用于拼读与示范） */
       var currentSheng = "";
@@ -1188,6 +1232,7 @@
             currentSheng = rawS;
             currentYun = rawY;
             updateExpectedDisplay();
+            recordPractice();
             spinning = false;
             btnSpin.disabled = false;
             setYunModeButtonsDisabled(false);
@@ -1200,6 +1245,7 @@
 
       btnSpin.addEventListener("click", spin);
       updateExpectedDisplay();
+      refreshLinkageNote();
     })();
   </script>
 </body>
